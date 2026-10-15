@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleearn | Next-Gen Ultra 3D Earning Ecosystem</title>
+  <meta name="description" content="Fleearn is the next-generation micro-task and decentralized earning platform. Multiply rewards, spin lucky vaults, and withdraw instantly with ultra-high yield.">
+
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#FFD700',
+              cyan: '#00F5FF',
+              emerald: '#00FFA3',
+              purple: '#9B51E0',
+              dark: '#080811',
+              darker: '#030308',
+              card: 'rgba(18, 18, 32, 0.65)'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Three.js & Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom External CSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080811;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #00F5FF, #FFD700);
+      border-radius: 4px;
+    }
+
+    /* Ambient Background Glow */
+    body {
+      background-color: #040409;
+      color: #F3F4F6;
+      overflow-x: hidden;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    #webgl-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Glassmorphism Styles */
+    .glass-card {
+      background: rgba(18, 18, 36, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.02);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover {
+      border-color: rgba(0, 245, 255, 0.35);
+      box-shadow: 0 25px 60px rgba(0, 245, 255, 0.15), inset 0 0 25px rgba(0, 245, 255, 0.05);
+      transform: translateY(-6px);
+    }
+
+    .glass-nav {
+      background: rgba(8, 8, 17, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    /* Gradient Text & Highlights */
+    .gradient-text-gold {
+      background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gradient-text-cyber {
+      background: linear-gradient(135deg, #00F5FF 0%, #00FFA3 50%, #FFD700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gradient-border-btn {
+      position: relative;
+      background: linear-gradient(135deg, #00F5FF, #9B51E0, #FFD700);
+      padding: 1px;
+      border-radius: 9999px;
+      display: inline-block;
+    }
+    .gradient-border-btn > span {
+      background: #090915;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 9999px;
+      padding: 0.75rem 2rem;
+      font-weight: 700;
+      transition: background 0.3s ease;
+    }
+    .gradient-border-btn:hover > span {
+      background: transparent;
+      color: #000;
+    }
+
+    /* 3D Tilt Card Simulation */
+    .tilt-box {
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    /* Floating badges & glowing orbs */
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.28;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Live Feed Ticker */
+    @keyframes scrollTicker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-track {
+      display: flex;
+      width: 200%;
+      animation: scrollTicker 28s linear infinite;
+    }
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+
+    /* Interactive 3D Coin Spinner Canvas inside Hero */
+    .hero-interactive-zone {
+      position: relative;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="relative selection:bg-brand-cyan selection:text-black">
+
+  <!-- Dynamic 3D ThreeJS Scene Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Ambient Glow Spots -->
+  <div class="glow-orb w-96 h-96 bg-cyan-500 top-20 -left-20"></div>
+  <div class="glow-orb w-[30rem] h-[30rem] bg-amber-500 top-1/3 -right-24"></div>
+  <div class="glow-orb w-[28rem] h-[28rem] bg-purple-600 bottom-40 left-1/4"></div>
+
+  <!-- Top Real-Time Payout Marquee -->
+  <div class="relative z-50 bg-[#0c0d1a]/80 backdrop-blur-md border-b border-white/5 py-2 overflow-hidden text-xs text-gray-300">
+    <div class="ticker-track space-x-8 whitespace-nowrap font-mono flex items-center">
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><strong>@cryptoking_99</strong> withdrew <b>$184.20 USDT</b> (Binance)</span>
+      <span class="text-white/20">•</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><strong>@elena_earn</strong> claimed <b>$65.00 PayPal</b> for Survey Bundle</span>
+      <span class="text-white/20">•</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><strong>@marcus_dev</strong> unlocked <b>Super Lucky Vault $250.00</b></span>
+      <span class="text-white/20">•</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><strong>@sarah_w</strong> completed 5 Video Tasks (+<b>$32.50</b>)</span>
+      <span class="text-white/20">•</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span><strong>@vikram_tech</strong> withdrew <b>$540.00 UPI/Bank</b></span>
+      <span class="text-white/20">•</span>
+      <!-- Duplicate for seamless scroll -->
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><strong>@cryptoking_99</strong> withdrew <b>$184.20 USDT</b> (Binance)</span>
+      <span class="text-white/20">•</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><strong>@elena_earn</strong> claimed <b>$65.00 PayPal</b> for Survey Bundle</span>
+      <span class="text-white/20">•</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><strong>@marcus_dev</strong> unlocked <b>Super Lucky Vault $250.00</b></span>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-3 cursor-pointer group" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-amber-400 p-[2px] shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-300">
+          <div class="w-full h-full bg-[#090a16] rounded-2xl flex items-center justify-center">
+            <i class="fa-solid fa-bolt text-lg text-brand-gold group-hover:rotate-12 transition-transform"></i>
+          </div>
+        </div>
+        <div>
+          <span class="text-2xl font-black tracking-tight font-mono text-white">FLEE<span class="text-brand-cyan">ARN</span></span>
+          <span class="hidden sm:inline-block ml-2 text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-brand-cyan border border-cyan-500/20">v3.5 Ultra</span>
+        </div>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-300">
+        <a href="#features" class="hover:text-brand-cyan transition-colors">Ecosystem</a>
+        <a href="#calculator" class="hover:text-brand-cyan transition-colors">Calculator</a>
+        <a href="#vault" class="hover:text-brand-cyan transition-colors flex items-center gap-1.5 text-amber-300">
+          <i class="fa-solid fa-crown text-xs"></i> 3D Vault
+        </a>
+        <a href="#how-it-works" class="hover:text-brand-cyan transition-colors">How It Works</a>
+        <a href="#reviews" class="hover:text-brand-cyan transition-colors">Payout Proofs</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-4">
+        <button onclick="openModal('loginModal')" class="hidden sm:block text-sm font-bold text-gray-300 hover:text-white px-4 py-2 transition-colors">
+          Sign In
+        </button>
+        <button onclick="openModal('downloadModal')" class="gradient-border-btn group">
+          <span class="text-white group-hover:text-black">
+            <i class="fa-brands fa-google-play text-sm"></i>
+            <span>Get Fleearn</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10">
+    <!-- HERO SECTION -->
+    <section class="min-h-[90vh] flex items-center pt-8 pb-20 px-6">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <!-- Hero Left Content -->
+        <div class="lg:col-span-7 space-y-8">
+          <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-gray-300">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span>Over <strong class="text-brand-emerald">$4,850,000+</strong> Paid to 1.2M+ Fleearners</span>
+          </div>
+
+          <h1 class="text-4xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.08]">
+            Turn Your Screen Time Into <span class="gradient-text-cyber block">Pure High-Yield Cash</span>
+          </h1>
+
+          <p class="text-lg text-gray-400 max-w-xl leading-relaxed">
+            Fleearn transforms everyday digital habits—testing elite apps, playing AAA micro-games, and viewing high-value sponsored feeds—into instant multi-currency payouts.
+          </p>
+
+          <!-- CTAs & Trust Badges -->
+          <div class="flex flex-wrap items-center gap-4 pt-2">
+            <button onclick="openModal('downloadModal')" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-cyan via-teal-400 to-brand-emerald text-black font-extrabold text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-400/40 hover:scale-105 transition-all duration-300 flex items-center gap-3">
+              <i class="fa-solid fa-rocket"></i>
+              <span>Start Earning Now • Free</span>
+            </button>
+            <a href="#calculator" class="px-7 py-4 rounded-2xl glass-card text-white font-bold text-base hover:bg-white/10 flex items-center gap-2">
+              <i class="fa-solid fa-calculator text-brand-gold"></i>
+              <span>Calculate Daily Earnings</span>
+            </a>
+          </div>
+
+          <!-- Quick Metrics Bar -->
+          <div class="grid grid-cols-3 gap-4 pt-6 border-t border-white/10 max-w-lg">
+            <div>
+              <p class="text-2xl sm:text-3xl font-extrabold font-mono text-white">$12.40</p>
+              <p class="text-xs text-gray-400">Avg. Hourly Rate</p>
+            </div>
+            <div>
+              <p class="text-2xl sm:text-3xl font-extrabold font-mono text-brand-emerald">&lt; 90s</p>
+              <p class="text-xs text-gray-400">Instant Withdrawal</p>
+            </div>
+            <div>
+              <p class="text-2xl sm:text-3xl font-extrabold font-mono text-brand-cyan">4.9 ★</p>
+              <p class="text-xs text-gray-400">Trustpilot Rating</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Right: Interactive 3D Holographic App Showcase & Coin Wheel -->
+        <div class="lg:col-span-5 relative flex justify-center">
+          <div class="relative w-full max-w-md">
+            
+            <!-- Floating 3D Badge 1 -->
+            <div class="absolute -top-6 -left-6 z-20 glass-card p-3 rounded-2xl flex items-center gap-3 animate-bounce shadow-2xl border-cyan-500/40">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+              </div>
+              <div>
+                <p class="text-[11px] text-gray-400">Today's Multiplier</p>
+                <p class="text-sm font-bold text-white font-mono">3.2x Streak Bonus</p>
+              </div>
+            </div>
+
+            <!-- Floating 3D Badge 2 -->
+            <div class="absolute -bottom-8 -right-4 z-20 glass-card p-3.5 rounded-2xl flex items-center gap-3 shadow-2xl border-amber-500/40">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-coins"></i>
+              </div>
+              <div>
+                <p class="text-[11px] text-gray-400">Instant Direct Wire</p>
+                <p class="text-sm font-bold text-emerald-400 font-mono">+$74.50 Paid</p>
+              </div>
+            </div>
+
+            <!-- 3D Smartphone Container Simulator -->
+            <div class="glass-card rounded-[2.5rem] p-4 border border-white/20 shadow-[0_0_60px_rgba(0,245,255,0.2)] relative overflow-hidden backdrop-blur-2xl">
+              <!-- Phone Bezel Notch -->
+              <div class="w-32 h-5 bg-black/80 rounded-full mx-auto mb-4 flex items-center justify-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-cyan-500/50"></div>
+                <div class="w-2 h-2 rounded-full bg-white/20"></div>
+              </div>
+
+              <!-- Inside App Mockup -->
+              <div class="bg-[#090b16] rounded-[2rem] p-5 space-y-5 border border-white/5">
+                <!-- User Balance Card -->
+                <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-[#121428] border border-cyan-500/30 relative overflow-hidden shadow-inner">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <span class="text-xs text-gray-400 uppercase font-mono">Fleearn Wallet balance</span>
+                      <h3 class="text-3xl font-black font-mono text-white mt-1">$482.90</h3>
+                    </div>
+                    <span class="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-md">VERIFIED</span>
+                  </div>
+
+                  <div class="mt-4 flex gap-2">
+                    <button onclick="triggerConfetti()" class="flex-1 py-2 rounded-xl bg-brand-cyan text-black font-bold text-xs hover:bg-cyan-300 transition-colors flex items-center justify-center gap-1.5">
+                      <i class="fa-solid fa-wallet"></i> Instant Cashout
+                    </button>
+                    <button onclick="spinWheelModal()" class="px-3 py-2 rounded-xl bg-white/10 text-white font-bold text-xs hover:bg-white/20 transition-colors">
+                      <i class="fa-solid fa-dice text-amber-400"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Daily Quests in App -->
+                <div class="space-y-2.5">
+                  <div class="flex justify-between text-xs font-semibold text-gray-400">
+                    <span>High Yield Tasks Today</span>
+                    <span class="text-brand-cyan">5 Available</span>
+                  </div>
+
+                  <div class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between border border-white/5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-gamepad"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-white">Play CyberRaid Lv.5</p>
+                        <p class="text-[10px] text-gray-400">Est. 12 mins • Fast</p>
+                      </div>
+                    </div>
+                    <span class="text-xs font-bold font-mono text-emerald-400">+$18.50</span>
+                  </div>
+
+                  <div class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between border border-white/5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-chart-pie"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-white">AI Sentiment Poll</p>
+                        <p class="text-[10px] text-gray-400">Est. 4 mins • Instant</p>
+                      </div>
+                    </div>
+                    <span class="text-xs font-bold font-mono text-emerald-400">+$6.20</span>
+                  </div>
+
+                  <div class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between border border-white/5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-user-plus"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-white">Invite 1 VIP Ally</p>
+                        <p class="text-[10px] text-gray-400">Lifetime 25% RevShare</p>
+                      </div>
+                    </div>
+                    <span class="text-xs font-bold font-mono text-emerald-400">+$25.00</span>
+                  </div>
+                </div>
+
+                <!-- Live Withdrawal Status Bar -->
+                <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
+                  <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+                  <span class="text-[11px] text-emerald-200">Zero commission fee on your next 3 withdrawals</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 3D INTERACTIVE EARNING CALCULATOR -->
+    <section id="calculator" class="py-24 px-6 relative">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center space-y-4 mb-16">
+          <span class="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-brand-cyan text-xs font-bold uppercase tracking-wider font-mono">
+            Interactive Financial Projection
+          </span>
+          <h2 class="text-3xl sm:text-5xl font-black text-white">How Much Will You <span class="gradient-text-gold">Earn with Fleearn?</span></h2>
+          <p class="text-gray-400 max-w-xl mx-auto">Adjust the sliders below to see your estimated monthly payout based on your spare hours and active multiplier streaks.</p>
+        </div>
+
+        <div class="glass-card rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <!-- Sliders Form -->
+          <div class="lg:col-span-7 space-y-8">
+            <!-- Slider 1: Hours per day -->
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <label class="text-sm font-bold text-gray-300">Daily Active Screen Time</label>
+                <span id="hours-display" class="font-mono text-lg font-black text-brand-cyan">2 Hours / Day</span>
+              </div>
+              <input type="range" id="hours-slider" min="0.5" max="8" step="0.5" value="2" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+              <div class="flex justify-between text-[11px] text-gray-500 mt-1 font-mono">
+                <span>30 mins</span>
+                <span>4 Hours</span>
+                <span>8 Hours</span>
+              </div>
+            </div>
+
+            <!-- Slider 2: Tasks & Testing Tier -->
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <label class="text-sm font-bold text-gray-300">Target Activities</label>
+                <span id="tier-display" class="font-mono text-sm font-bold text-amber-300">Gaming + Beta Testing</span>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <button onclick="setTier(1, this)" class="tier-btn active py-3 px-3 rounded-xl border border-cyan-500 bg-cyan-500/20 text-white text-xs font-bold text-center transition-all">
+                  Micro Surveys
+                </button>
+                <button onclick="setTier(2, this)" class="tier-btn py-3 px-3 rounded-xl border border-white/10 bg-white/5 text-gray-300 text-xs font-bold text-center transition-all">
+                  App Testing
+                </button>
+                <button onclick="setTier(3, this)" class="tier-btn py-3 px-3 rounded-xl border border-white/10 bg-white/5 text-gray-300 text-xs font-bold text-center transition-all">
+                  VIP High-Roll
+                </button>
+              </div>
+            </div>
+
+            <!-- Slider 3: Friends Referred -->
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <label class="text-sm font-bold text-gray-300">Allies Invited (Affiliate Pass)</label>
+                <span id="allies-display" class="font-mono text-lg font-black text-brand-emerald">3 Friends</span>
+              </div>
+              <input type="range" id="allies-slider" min="0" max="30" step="1" value="3" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-400">
+            </div>
+          </div>
+
+          <!-- Earnings Output Card (3D Styled) -->
+          <div class="lg:col-span-5 p-8 rounded-3xl bg-gradient-to-b from-[#14162e] to-[#0d0e1d] border border-cyan-500/40 relative text-center space-y-6 shadow-2xl">
+            <span class="text-xs font-mono uppercase tracking-widest text-gray-400">Projected Monthly Yield</span>
+            <div>
+              <p id="total-monthly" class="text-5xl sm:text-6xl font-black font-mono gradient-text-gold tracking-tight">$426.00</p>
+              <p class="text-xs text-gray-400 mt-2">≈ <span id="total-crypto" class="font-mono text-white">426 USDT</span> or Direct Bank Wire</p>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-left space-y-2 text-xs">
+              <div class="flex justify-between text-gray-400">
+                <span>Task Base Income:</span>
+                <span id="base-income" class="font-mono font-bold text-white">$336.00</span>
+              </div>
+              <div class="flex justify-between text-gray-400">
+                <span>Affiliate Residual Bonus:</span>
+                <span id="bonus-income" class="font-mono font-bold text-emerald-400">+$90.00</span>
+              </div>
+              <div class="flex justify-between text-gray-400">
+                <span>Withdrawal Speed:</span>
+                <span class="font-mono font-bold text-cyan-300">Under 60 Seconds</span>
+              </div>
+            </div>
+
+            <button onclick="openModal('downloadModal')" class="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-cyan to-brand-emerald text-black font-extrabold text-sm hover:scale-[1.02] transition-transform shadow-lg shadow-cyan-500/20">
+              Claim This Earning Rate Today
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: THE 3D INTERACTIVE LUCKY VAULT WHEEL -->
+    <section id="vault" class="py-24 px-6 bg-gradient-to-b from-transparent via-[#090b1c]/80 to-transparent relative">
+      <div class="max-w-6xl mx-auto text-center space-y-4 mb-16">
+        <span class="px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-brand-gold text-xs font-bold uppercase tracking-wider font-mono">
+          Interactive Reward Chamber
+        </span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white">Unlock The 3D <span class="gradient-text-gold">Fleearn Vault</span></h2>
+        <p class="text-gray-400 max-w-lg mx-auto">Every new member gets 1 Free Guaranteed Spin upon downloading the app. Test the vault below right inside your browser!</p>
+      </div>
+
+      <div class="max-w-xl mx-auto glass-card rounded-3xl p-8 border border-amber-500/30 text-center relative overflow-hidden shadow-2xl">
+        <!-- Vault Disc -->
+        <div class="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto my-6 flex items-center justify-center">
+          <!-- Outer Neon Ring -->
+          <div class="absolute inset-0 rounded-full border-4 border-dashed border-cyan-400/30 animate-[spin_30s_linear_infinite]"></div>
+          <!-- Wheel Circle -->
+          <div id="vault-wheel" class="w-full h-full rounded-full border-4 border-amber-400/80 bg-gradient-to-tr from-indigo-950 via-purple-950 to-slate-900 shadow-[0_0_50px_rgba(255,215,0,0.25)] flex items-center justify-center relative overflow-hidden transition-transform duration-[4000ms] ease-out">
+            <!-- Wheel Wedges Graphics -->
+            <div class="absolute w-full h-0.5 bg-amber-400/30"></div>
+            <div class="absolute w-full h-0.5 bg-amber-400/30 rotate-45"></div>
+            <div class="absolute w-full h-0.5 bg-amber-400/30 rotate-90"></div>
+            <div class="absolute w-full h-0.5 bg-amber-400/30 rotate-[135deg]"></div>
+            
+            <div class="absolute top-4 text-xs font-bold text-amber-300 font-mono">$100 USDT</div>
+            <div class="absolute bottom-4 text-xs font-bold text-cyan-300 font-mono">$25 Cash</div>
+            <div class="absolute right-4 text-xs font-bold text-emerald-300 font-mono">$50 PayPal</div>
+            <div class="absolute left-4 text-xs font-bold text-purple-300 font-mono">5x Boost</div>
+
+            <div class="w-20 h-20 rounded-full bg-slate-950 border-2 border-white/20 flex flex-col items-center justify-center z-10 shadow-xl">
+              <i class="fa-solid fa-gem text-amber-400 text-xl animate-pulse"></i>
+              <span class="text-[9px] font-mono text-gray-400 font-bold mt-1">SPIN</span>
+            </div>
+          </div>
+          <!-- Needle Pointer -->
+          <div class="absolute -top-3 w-6 h-8 bg-amber-400 clip-triangle shadow-lg z-20" style="clip-path: polygon(50% 100%, 0 0, 100% 0);"></div>
+        </div>
+
+        <div class="space-y-4">
+          <button id="spin-btn" onclick="spinVaultWheel()" class="px-10 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-black font-extrabold text-base hover:scale-105 shadow-xl shadow-amber-500/25 transition-all">
+            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Spin The 3D Vault
+          </button>
+          <p id="spin-status" class="text-xs text-gray-400 font-mono">1 Free Daily Trial Available</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: FEATURES / ECOSYSTEM -->
+    <section id="features" class="py-24 px-6 relative">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center space-y-4 mb-20">
+          <span class="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-brand-emerald text-xs font-bold uppercase tracking-wider font-mono">
+            Unrivaled Advantages
+          </span>
+          <h2 class="text-3xl sm:text-5xl font-black text-white">Why Fleearn Outperforms <span class="gradient-text-cyber">Legacy Apps</span></h2>
+          <p class="text-gray-400 max-w-xl mx-auto">Built from the ground up on frictionless payment gateways and verified enterprise advertising partnerships.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- Card 1 -->
+          <div class="glass-card p-8 rounded-3xl space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-brand-cyan text-2xl shadow-lg shadow-cyan-500/10">
+              <i class="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Instant Flash Withdrawals</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              No arbitrary waiting periods. Once you reach the micro-threshold ($1.00), payouts hit your PayPal, Crypto (USDT/BTC), or Bank Account in seconds.
+            </p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="glass-card p-8 rounded-3xl space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-brand-gold text-2xl shadow-lg shadow-amber-500/10">
+              <i class="fa-solid fa-cubes"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Triple Yield Multipliers</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Maintain your daily login streak to trigger automatic multipliers up to 4.5x on all completed surveys, gaming levels, and sponsor bids.
+            </p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="glass-card p-8 rounded-3xl space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-2xl shadow-lg shadow-purple-500/10">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Zero-Loss Anti-Fraud Core</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Every completed campaign is cryptographically verified to ensure you are credited 100% of the funds immediately without chargebacks.
+            </p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="glass-card p-8 rounded-3xl space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-brand-emerald text-2xl shadow-lg shadow-emerald-500/10">
+              <i class="fa-solid fa-users-rays"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Passive Affiliate Synergy</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Invite coworkers, friends, or your social audience. Earn 20% to 35% residual commissions on all their lifetime task completions.
+            </p>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="glass-card p-8 rounded-3xl space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-2xl shadow-lg shadow-rose-500/10">
+              <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">AAA Game Beta Testing</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Get paid premium rates to playtest upcoming action, strategy, and RPG mobile titles before they release on official app stores.
+            </p>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="glass-card p-8 rounded-3xl space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-2xl shadow-lg shadow-blue-500/10">
+              <i class="fa-solid fa-globe"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Worldwide Accessibility</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Active in over 180+ countries with local currency conversion (USD, EUR, INR, GBP, BRL, NGN, and 40+ more).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: HOW IT WORKS IN 3 STEPS -->
+    <section id="how-it-works" class="py-24 px-6 bg-[#060712] relative">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center space-y-4 mb-20">
+          <span class="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-brand-cyan text-xs font-bold uppercase tracking-wider font-mono">
+            Fast Onboarding
+          </span>
+          <h2 class="text-3xl sm:text-5xl font-black text-white">From Download to Cashout in <span class="gradient-text-gold">3 Steps</span></h2>
+          <p class="text-gray-400 max-w-xl mx-auto">No prior knowledge required. Anyone with a smartphone or browser can start immediately.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+          <!-- Step 1 -->
+          <div class="glass-card p-8 rounded-3xl relative border border-white/10 space-y-6">
+            <div class="text-5xl font-black font-mono text-white/10">01</div>
+            <h3 class="text-2xl font-bold text-white">Download & Register</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Install the lightweight Fleearn app (available for Android, iOS, or Web). Sign up in 10 seconds via Google or Email.
+            </p>
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-brand-cyan">
+              <span>Instant $2.50 Welcome Credit</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="glass-card p-8 rounded-3xl relative border border-cyan-500/30 space-y-6 shadow-xl shadow-cyan-500/5">
+            <div class="text-5xl font-black font-mono text-cyan-400/20">02</div>
+            <h3 class="text-2xl font-bold text-white">Complete High-Yield Quests</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Pick from 500+ daily offers: try trending apps, answer quick consumer surveys, or join interactive live tournaments.
+            </p>
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-brand-emerald">
+              <span>Earn $5.00 to $50.00 Daily</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="glass-card p-8 rounded-3xl relative border border-amber-500/30 space-y-6 shadow-xl shadow-amber-500/5">
+            <div class="text-5xl font-black font-mono text-amber-400/20">03</div>
+            <h3 class="text-2xl font-bold text-white">Instant Flash Payout</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Select your preferred method: PayPal, Crypto (USDT, Bitcoin), Gift Cards (Amazon, Steam, Apple), or Direct Bank Wire.
+            </p>
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400">
+              <span>0% Commission Deduction</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: SUPPORTED CASHOUT METHODS -->
+    <section class="py-20 px-6 border-y border-white/5 bg-[#080918]">
+      <div class="max-w-7xl mx-auto text-center space-y-8">
+        <p class="text-xs font-mono uppercase tracking-widest text-gray-400">Supported Direct Liquidity Channels</p>
+        <div class="flex flex-wrap items-center justify-center gap-8 sm:gap-14 opacity-75 grayscale hover:grayscale-0 transition-all duration-300">
+          <div class="flex items-center gap-2 text-xl font-bold text-white">
+            <i class="fa-brands fa-paypal text-blue-400 text-2xl"></i> PayPal
+          </div>
+          <div class="flex items-center gap-2 text-xl font-bold text-white">
+            <i class="fa-brands fa-bitcoin text-amber-400 text-2xl"></i> Bitcoin
+          </div>
+          <div class="flex items-center gap-2 text-xl font-bold text-white">
+            <i class="fa-solid fa-coins text-emerald-400 text-2xl"></i> USDT (TRC-20)
+          </div>
+          <div class="flex items-center gap-2 text-xl font-bold text-white">
+            <i class="fa-brands fa-amazon text-amber-300 text-2xl"></i> Amazon Gift
+          </div>
+          <div class="flex items-center gap-2 text-xl font-bold text-white">
+            <i class="fa-brands fa-apple text-gray-200 text-2xl"></i> Apple Pay
+          </div>
+          <div class="flex items-center gap-2 text-xl font-bold text-white">
+            <i class="fa-solid fa-building-columns text-cyan-400 text-2xl"></i> Wire Transfer
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: LIVE TESTIMONIALS & PROOFS -->
+    <section id="reviews" class="py-24 px-6 relative">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center space-y-4 mb-20">
+          <span class="px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider font-mono">
+            Verified Community
+          </span>
+          <h2 class="text-3xl sm:text-5xl font-black text-white">Loved by <span class="gradient-text-cyber">Real Earners Worldwide</span></h2>
+          <p class="text-gray-400 max-w-xl mx-auto">Read authentic reviews from members who withdraw passive earnings every single week.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <!-- Review 1 -->
+          <div class="glass-card p-8 rounded-3xl space-y-4 border border-white/10">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-white">
+                  DA
+                </div>
+                <div>
+                  <h4 class="font-bold text-white text-sm">David Alvarez</h4>
+                  <p class="text-xs text-gray-400">Madrid, Spain</p>
+                </div>
+              </div>
+              <span class="text-amber-400 text-xs">★★★★★</span>
+            </div>
+            <p class="text-sm text-gray-300 leading-relaxed">
+              "I was skeptical because 95% of earning apps are spam or have unreachable $50 cashouts. Fleearn let me cash out $14 to my PayPal within 30 minutes of starting. It's now my daily commute routine!"
+            </p>
+            <div class="pt-2 text-xs font-mono text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i> Withdrew $340.50 Total
+            </div>
+          </div>
+
+          <!-- Review 2 -->
+          <div class="glass-card p-8 rounded-3xl space-y-4 border border-cyan-500/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 to-rose-600 flex items-center justify-center font-bold text-white">
+                  SK
+                </div>
+                <div>
+                  <h4 class="font-bold text-white text-sm">Sarah Jenkins</h4>
+                  <p class="text-xs text-gray-400">Austin, TX</p>
+                </div>
+              </div>
+              <span class="text-amber-400 text-xs">★★★★★</span>
+            </div>
+            <p class="text-sm text-gray-300 leading-relaxed">
+              "The 3D vault feature is super fun. Last Friday I spun the vault and landed a $50 bonus crate. Withdrawals in crypto (USDT) take less than a minute. Absolute game changer!"
+            </p>
+            <div class="pt-2 text-xs font-mono text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i> Withdrew $812.00 Total
+            </div>
+          </div>
+
+          <!-- Review 3 -->
+          <div class="glass-card p-8 rounded-3xl space-y-4 border border-white/10">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-600 flex items-center justify-center font-bold text-white">
+                  RO
+                </div>
+                <div>
+                  <h4 class="font-bold text-white text-sm">Ravi Omkar</h4>
+                  <p class="text-xs text-gray-400">Bengaluru, India</p>
+                </div>
+              </div>
+              <span class="text-amber-400 text-xs">★★★★★</span>
+            </div>
+            <p class="text-sm text-gray-300 leading-relaxed">
+              "Affiliate program is unmatched. I shared my referral code with my college discord and now make $15–$25 per day completely passive while studying. Highly recommended."
+            </p>
+            <div class="pt-2 text-xs font-mono text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i> Withdrew $520.40 Total
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: FAQ ACCORDION -->
+    <section class="py-24 px-6 bg-[#070814] relative">
+      <div class="max-w-4xl mx-auto space-y-12">
+        <div class="text-center space-y-4">
+          <span class="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-brand-cyan text-xs font-bold uppercase tracking-wider font-mono">
+            Got Questions?
+          </span>
+          <h2 class="text-3xl sm:text-5xl font-black text-white">Frequently Asked <span class="gradient-text-gold">Questions</span></h2>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Accordion Item 1 -->
+          <div class="glass-card rounded-2xl p-6 border border-white/5 cursor-pointer" onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-white">Is Fleearn 100% free to join and use?</h3>
+              <i class="fa-solid fa-chevron-down text-gray-400 text-sm transition-transform duration-300"></i>
+            </div>
+            <div class="hidden text-sm text-gray-400 mt-4 leading-relaxed">
+              Yes, absolutely! Fleearn never charges any membership or subscription fee. Our revenue comes directly from premium game developers, brand surveys, and advertisers who pay us to connect with users.
+            </div>
+          </div>
+
+          <!-- Accordion Item 2 -->
+          <div class="glass-card rounded-2xl p-6 border border-white/5 cursor-pointer" onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-white">What is the minimum withdrawal amount?</h3>
+              <i class="fa-solid fa-chevron-down text-gray-400 text-sm transition-transform duration-300"></i>
+            </div>
+            <div class="hidden text-sm text-gray-400 mt-4 leading-relaxed">
+              Our minimum cashout threshold is only $1.00 USD. You don't need to accumulate huge balances over months before you can withdraw your funds.
+            </div>
+          </div>
+
+          <!-- Accordion Item 3 -->
+          <div class="glass-card rounded-2xl p-6 border border-white/5 cursor-pointer" onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-white">How fast do payouts get processed?</h3>
+              <i class="fa-solid fa-chevron-down text-gray-400 text-sm transition-transform duration-300"></i>
+            </div>
+            <div class="hidden text-sm text-gray-400 mt-4 leading-relaxed">
+              98% of all cashout requests are processed automatically by our automated liquidity gateway in under 2 minutes (PayPal, Crypto, Gift cards).
+            </div>
+          </div>
+
+          <!-- Accordion Item 4 -->
+          <div class="glass-card rounded-2xl p-6 border border-white/5 cursor-pointer" onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-white">Can I use Fleearn on multiple devices?</h3>
+              <i class="fa-solid fa-chevron-down text-gray-400 text-sm transition-transform duration-300"></i>
+            </div>
+            <div class="hidden text-sm text-gray-400 mt-4 leading-relaxed">
+              Yes! You can seamlessly synchronize your Fleearn account across your Android smartphone, tablet, and desktop web browser.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: ULTRA CTA BANNER -->
+    <section class="py-24 px-6 relative">
+      <div class="max-w-6xl mx-auto glass-card rounded-[3rem] p-10 sm:p-20 text-center relative overflow-hidden border border-cyan-500/40 shadow-[0_0_90px_rgba(0,245,255,0.15)]">
+        <div class="relative z-10 space-y-8 max-w-2xl mx-auto">
+          <span class="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold">
+            LIMITED TIME SIGNUP REWARD
+          </span>
+          <h2 class="text-4xl sm:text-6xl font-black text-white leading-tight">
+            Claim Your <span class="gradient-text-gold">$5.00 Bonus</span> In Less Than 60 Seconds
+          </h2>
+          <p class="text-base sm:text-lg text-gray-300">
+            Join over 1,200,000+ members who turn idle screen time into cold hard currency every day. Download Fleearn now.
+          </p>
+
+          <div class="flex flex-wrap justify-center items-center gap-4 pt-4">
+            <button onclick="openModal('downloadModal')" class="px-10 py-5 rounded-2xl bg-gradient-to-r from-brand-cyan via-teal-400 to-brand-emerald text-black font-black text-lg hover:scale-105 shadow-2xl shadow-cyan-500/30 transition-all flex items-center gap-3">
+              <i class="fa-brands fa-google-play"></i>
+              <span>Download Fleearn App</span>
+            </button>
+            <button onclick="openModal('loginModal')" class="px-8 py-5 rounded-2xl glass-card text-white font-bold text-base hover:bg-white/10 transition-colors">
+              Access Web Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="relative z-10 border-t border-white/10 bg-[#04040a] pt-16 pb-12 px-6 text-sm text-gray-400">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+      <!-- Col 1 -->
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-amber-400 p-[2px]">
+            <div class="w-full h-full bg-black rounded-xl flex items-center justify-center">
+              <i class="fa-solid fa-bolt text-sm text-brand-gold"></i>
+            </div>
+          </div>
+          <span class="text-xl font-black tracking-tight font-mono text-white">FLEE<span class="text-brand-cyan">ARN</span></span>
+        </div>
+        <p class="text-xs text-gray-500 leading-relaxed">
+          The premier ultra 3D reward ecosystem. Connect with verified brands, complete fun digital micro-missions, and receive flash withdrawals globally.
+        </p>
+      </div>
+
+      <!-- Col 2 -->
+      <div class="space-y-3">
+        <h5 class="text-white font-bold font-mono uppercase text-xs">Ecosystem</h5>
+        <ul class="space-y-2 text-xs">
+          <li><a href="#features" class="hover:text-brand-cyan transition-colors">Daily Task Board</a></li>
+          <li><a href="#vault" class="hover:text-brand-cyan transition-colors">3D Vault Spin</a></li>
+          <li><a href="#calculator" class="hover:text-brand-cyan transition-colors">Profit Calculator</a></li>
+          <li><a href="#" class="hover:text-brand-cyan transition-colors">VIP Referral Network</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3 -->
+      <div class="space-y-3">
+        <h5 class="text-white font-bold font-mono uppercase text-xs">Security & Terms</h5>
+        <ul class="space-y-2 text-xs">
+          <li><a href="#" class="hover:text-brand-cyan transition-colors">Terms of Service</a></li>
+          <li><a href="#" class="hover:text-brand-cyan transition-colors">Privacy Policy</a></li>
+          <li><a href="#" class="hover:text-brand-cyan transition-colors">Fraud Prevention</a></li>
+          <li><a href="#" class="hover:text-brand-cyan transition-colors">Payout Verifications</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4 -->
+      <div class="space-y-3">
+        <h5 class="text-white font-bold font-mono uppercase text-xs">Connect</h5>
+        <div class="flex items-center gap-3 text-lg text-gray-300">
+          <a href="#" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-cyan-500/20 hover:text-brand-cyan flex items-center justify-center transition-colors"><i class="fa-brands fa-discord"></i></a>
+          <a href="#" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-cyan-500/20 hover:text-brand-cyan flex items-center justify-center transition-colors"><i class="fa-brands fa-telegram"></i></a>
+          <a href="#" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-cyan-500/20 hover:text-brand-cyan flex items-center justify-center transition-colors"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-cyan-500/20 hover:text-brand-cyan flex items-center justify-center transition-colors"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+        <p class="text-[11px] text-gray-500">24/7 Dedicated Support at support@fleearn.io</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-4">
+      <p>© 2026 Fleearn Technologies Inc. All rights reserved.</p>
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="text-gray-400">All Payout Nodes Operational</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: DOWNLOAD / GET FLEEARN -->
+  <div id="downloadModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-3xl p-8 border border-cyan-500/40 relative shadow-2xl">
+      <button onclick="closeModal('downloadModal')" class="absolute top-5 right-5 text-gray-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="text-center space-y-4 mb-6">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 to-emerald-400 p-[2px] mx-auto">
+          <div class="w-full h-full bg-[#0a0c1a] rounded-2xl flex items-center justify-center text-2xl text-amber-400">
+            <i class="fa-solid fa-download"></i>
+          </div>
+        </div>
+        <h3 class="text-2xl font-black text-white">Get Started With Fleearn</h3>
+        <p class="text-xs text-gray-400">Scan QR or select your preferred platform to claim your $2.50 welcome prize immediately.</p>
+      </div>
+
+      <div class="space-y-3">
+        <button onclick="alert('Downloading Fleearn APK / Redirecting to Google Play...'); triggerConfetti();" class="w-full py-3.5 px-4 rounded-xl bg-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/50 border border-white/10 flex items-center justify-between text-white font-bold text-sm transition-all">
+          <span class="flex items-center gap-3"><i class="fa-brands fa-google-play text-emerald-400 text-lg"></i> Google Play Store</span>
+          <span class="text-[11px] text-gray-400">v3.5 • Free</span>
+        </button>
+
+        <button onclick="alert('Redirecting to Apple App Store...'); triggerConfetti();" class="w-full py-3.5 px-4 rounded-xl bg-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/50 border border-white/10 flex items-center justify-between text-white font-bold text-sm transition-all">
+          <span class="flex items-center gap-3"><i class="fa-brands fa-apple text-gray-300 text-lg"></i> Apple iOS App Store</span>
+          <span class="text-[11px] text-gray-400">Beta Testflight</span>
+        </button>
+
+        <button onclick="alert('Launching Web PWA version...'); triggerConfetti();" class="w-full py-3.5 px-4 rounded-xl bg-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/50 border border-white/10 flex items-center justify-between text-white font-bold text-sm transition-all">
+          <span class="flex items-center gap-3"><i class="fa-solid fa-globe text-cyan-400 text-lg"></i> Instant Web App (No Install)</span>
+          <span class="text-[11px] text-emerald-400">Recommended</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SIGN IN / DASHBOARD -->
+  <div id="loginModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-3xl p-8 border border-white/20 relative shadow-2xl">
+      <button onclick="closeModal('loginModal')" class="absolute top-5 right-5 text-gray-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="text-center space-y-3 mb-6">
+        <h3 class="text-2xl font-black text-white">Access Your Fleearn Account</h3>
+        <p class="text-xs text-gray-400">Sign in to check pending tasks and request withdrawals.</p>
+      </div>
+
+      <form onsubmit="event.preventDefault(); alert('Logged into Fleearn Demo Account! Balance: $482.90'); closeModal('loginModal'); triggerConfetti();" class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-gray-300">Email Address</label>
+          <input type="email" required placeholder="earner@example.com" class="w-full mt-1.5 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-cyan">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300">Password</label>
+          <input type="password" required placeholder="••••••••" class="w-full mt-1.5 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-cyan">
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-cyan to-brand-emerald text-black font-extrabold text-sm hover:scale-[1.02] transition-transform">
+          Sign In & Start Earning
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3D THREE.JS SCRIPT -->
+  <script>
+    /* ============================================================
+       THREE.JS ULTRA 3D BACKGROUND (Floating Golden Coins & Torus)
+       ============================================================ */
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    
+    // Camera
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 24;
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const pointLightCyan = new THREE.PointLight(0x00f5ff, 2.5, 80);
+    pointLightCyan.position.set(-15, 12, 10);
+    scene.add(pointLightCyan);
+
+    const pointLightGold = new THREE.PointLight(0xffd700, 3.5, 80);
+    pointLightGold.position.set(15, -8, 10);
+    scene.add(pointLightGold);
+
+    const pointLightPurple = new THREE.PointLight(0x9b51e0, 2.0, 60);
+    pointLightPurple.position.set(0, 0, 15);
+    scene.add(pointLightPurple);
+
+    // Objects Group
+    const objectsGroup = new THREE.Group();
+    scene.add(objectsGroup);
+
+    // 1. Golden Glowing 3D Coins (Cylinders)
+    const coinGeometry = new THREE.CylinderGeometry(1.6, 1.6, 0.28, 32);
+    const coinMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      metalness: 0.88,
+      roughness: 0.18,
+      emissive: 0x221a00
+    });
+
+    const coins = [];
+    const numCoins = 18;
+
+    for (let i = 0; i < numCoins; i++) {
+      const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+      coin.position.x = (Math.random() - 0.5) * 45;
+      coin.position.y = (Math.random() - 0.5) * 35;
+      coin.position.z = (Math.random() - 0.5) * 20 - 4;
+
+      coin.rotation.x = Math.random() * Math.PI;
+      coin.rotation.y = Math.random() * Math.PI;
+
+      coin.userData = {
+        rotSpeedX: (Math.random() - 0.5) * 0.025,
+        rotSpeedY: (Math.random() - 0.5) * 0.035,
+        floatSpeed: 0.008 + Math.random() * 0.012,
+        initialY: coin.position.y
+      };
+
+      coins.push(coin);
+      objectsGroup.add(coin);
+    }
+
+    // 2. Futuristic Cyber Holographic Gem (Icosahedron)
+    const gemGeometry = new THREE.IcosahedronGeometry(2.8, 0);
+    const gemMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x00f5ff,
+      metalness: 0.3,
+      roughness: 0.1,
+      transmission: 0.65,
+      thickness: 1.2,
+      wireframe: false
+    });
+    const mainGem = new THREE.Mesh(gemGeometry, gemMaterial);
+    mainGem.position.set(16, 5, -2);
+    scene.add(mainGem);
+
+    // Wireframe Cage around the Gem
+    const gemWireGeo = new THREE.IcosahedronGeometry(3.2, 1);
+    const gemWireMat = new THREE.MeshBasicMaterial({ color: 0x00f5ff, wireframe: true, transparent: true, opacity: 0.25 });
+    const wireCage = new THREE.Mesh(gemWireGeo, gemWireMat);
+    mainGem.add(wireCage);
+
+    // 3. Floating Earning Energy Rings (Torus)
+    const ringGeo = new THREE.TorusGeometry(3.5, 0.15, 16, 100);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x9b51e0,
+      metalness: 0.8,
+      roughness: 0.2,
+      emissive: 0x3d0077
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.set(-18, -6, -4);
+    ring.rotation.x = Math.PI / 3;
+    scene.add(ring);
+
+    // 4. Stardust Particle Cloud
+    const particleCount = 450;
+    const particleGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      particlePositions[i] = (Math.random() - 0.5) * 70;
+      particlePositions[i + 1] = (Math.random() - 0.5) * 60;
+      particlePositions[i + 2] = (Math.random() - 0.5) * 40;
+    }
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 2));
+    const particleMaterial = new THREE.PointsMaterial({
+      color: 0x00f5ff,
+      size: 0.15,
+      transparent: true,
+      opacity: 0.6
+    });
+    const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particleSystem);
+
+    // Mouse Interaction
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetX = 0;
+    let targetY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+      mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+    });
+
+    // Handle Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animation Loop
+    let clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsedTime = clock.getElapsedTime();
+
+      // Smooth camera parallax
+      targetX = mouseX * 8;
+      targetY = -mouseY * 8;
+      camera.position.x += (targetX - camera.position.x) * 0.05;
+      camera.position.y += (targetY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      // Rotate Coins
+      coins.forEach((c) => {
+        c.rotation.x += c.userData.rotSpeedX;
+        c.rotation.y += c.userData.rotSpeedY;
+        c.position.y = c.userData.initialY + Math.sin(elapsedTime * 2 + c.userData.initialY) * 0.8;
+      });
+
+      // Rotate Main Gem & Wireframe
+      mainGem.rotation.x = elapsedTime * 0.4;
+      mainGem.rotation.y = elapsedTime * 0.6;
+      wireCage.rotation.y = -elapsedTime * 0.3;
+
+      // Rotate Ring
+      ring.rotation.z = elapsedTime * 0.5;
+      ring.rotation.y = Math.sin(elapsedTime * 0.4) * 0.5;
+
+      // Stardust drift
+      particleSystem.rotation.y = elapsedTime * 0.03;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    /* ============================================================
+       INTERACTIVE CALCULATOR LOGIC
+       ============================================================ */
+    const hoursSlider = document.getElementById('hours-slider');
+    const alliesSlider = document.getElementById('allies-slider');
+    const hoursDisplay = document.getElementById('hours-display');
+    const alliesDisplay = document.getElementById('allies-display');
+    const totalMonthly = document.getElementById('total-monthly');
+    const totalCrypto = document.getElementById('total-crypto');
+    const baseIncomeDisplay = document.getElementById('base-income');
+    const bonusIncomeDisplay = document.getElementById('bonus-income');
+
+    let currentMultiplier = 1.6; // Tier 1: 1.2, Tier 2: 1.6, Tier 3: 2.4
+
+    function calculateEarnings() {
+      const hours = parseFloat(hoursSlider.value);
+      const allies = parseInt(alliesSlider.value);
+
+      hoursDisplay.textContent = `${hours} Hours / Day`;
+      alliesDisplay.textContent = `${allies} Friends`;
+
+      // Rates: Base approx $7/hr * multiplier * 30 days
+      const hourlyRate = 7.0 * currentMultiplier;
+      const baseMonthly = Math.round(hours * hourlyRate * 30);
+      const affiliateMonthly = Math.round(allies * 30.0);
+      const total = baseMonthly + affiliateMonthly;
+
+      totalMonthly.textContent = `$${total.toLocaleString()}.00`;
+      totalCrypto.textContent = `${total.toLocaleString()} USDT`;
+      baseIncomeDisplay.textContent = `$${baseMonthly.toLocaleString()}.00`;
+      bonusIncomeDisplay.textContent = `+$${affiliateMonthly.toLocaleString()}.00`;
+    }
+
+    function setTier(tier, btn) {
+      document.querySelectorAll('.tier-btn').forEach(b => {
+        b.classList.remove('active', 'border-cyan-500', 'bg-cyan-500/20');
+        b.classList.add('border-white/10', 'bg-white/5');
+      });
+      btn.classList.add('active', 'border-cyan-500', 'bg-cyan-500/20');
+      btn.classList.remove('border-white/10', 'bg-white/5');
+
+      const tierLabel = document.getElementById('tier-display');
+      if (tier === 1) {
+        currentMultiplier = 1.1;
+        tierLabel.textContent = "Micro Surveys & Polls";
+      } else if (tier === 2) {
+        currentMultiplier = 1.6;
+        tierLabel.textContent = "Gaming + Beta Testing";
+      } else {
+        currentMultiplier = 2.4;
+        tierLabel.textContent = "VIP High-Roll Tournaments";
+      }
+      calculateEarnings();
+    }
+
+    hoursSlider.addEventListener('input', calculateEarnings);
+    alliesSlider.addEventListener('input', calculateEarnings);
+    calculateEarnings();
+
+    /* ============================================================
+       INTERACTIVE 3D LUCKY VAULT WHEEL
+       ============================================================ */
+    let isSpinning = false;
+    let currentWheelRotation = 0;
+
+    function spinVaultWheel() {
+      if (isSpinning) return;
+      isSpinning = true;
+      const wheel = document.getElementById('vault-wheel');
+      const spinBtn = document.getElementById('spin-btn');
+      const spinStatus = document.getElementById('spin-status');
+
+      spinBtn.disabled = true;
+      spinBtn.classList.add('opacity-50');
+      spinStatus.textContent = "Unlocking Cryptographic Vault Chamber...";
+
+      // Random degrees: at least 5 full rotations (1800 deg) + random slice
+      const randomExtra = Math.floor(Math.random() * 360) + 1800;
+      currentWheelRotation += randomExtra;
+
+      wheel.style.transform = `rotate(${currentWheelRotation}deg)`;
+
+      setTimeout(() => {
+        isSpinning = false;
+        spinBtn.disabled = false;
+        spinBtn.classList.remove('opacity-50');
+        triggerConfetti();
+
+        const prizes = ["$50.00 PayPal Cash Bonus", "$100 USDT Direct Voucher", "$25 Instant Credit", "5x All-Day Multiplier Booster"];
+        const awarded = prizes[Math.floor(Math.random() * prizes.length)];
+        
+        spinStatus.innerHTML = `<span class="text-brand-emerald font-bold">🎉 CONGRATULATIONS! You won ${awarded}!</span>`;
+        alert(`🎉 JACKPOT UNLOCKED!\nYou won: ${awarded}!\nDownload Fleearn to claim it to your account immediately.`);
+      }, 4200);
+    }
+
+    function spinWheelModal() {
+      const vaultSec = document.getElementById('vault');
+      vaultSec.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(spinVaultWheel, 600);
+    }
+
+    /* ============================================================
+       CONFETTI BURST HELPER
+       ============================================================ */
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#00F5FF', '#FFD700', '#00FFA3', '#9B51E0']
+        });
+      }
+    }
+
+    /* ============================================================
+       MODAL CONTROLLERS & FAQ ACCORDION
+       ============================================================ */
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function toggleFaq(element) {
+      const content = element.querySelector('.text-sm');
+      const icon = element.querySelector('i');
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+
+    // Close modal on escape
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal('downloadModal');
+        closeModal('loginModal');
+      }
+    });
+  </script>
+  <!-- Custom External JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
